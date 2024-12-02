@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    nginx \
     nodejs \
     npm \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
@@ -40,8 +41,12 @@ RUN npm run production
 # Step 10: Set proper permissions for Laravel storage and bootstrap/cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Step 11: Expose port 9000 for PHP-FPM to serve the application
+# Step 11: Copy Nginx configuration file for Laravel application
+COPY ./deploy/nginx/default.conf /etc/nginx/sites-available/default
+
+# Step 12: Expose port 8080 for Nginx and 9000 for PHP-FPM
+EXPOSE 8080
 EXPOSE 9000
 
-# Step 12: Start PHP-FPM to serve the Laravel application
-CMD ["php-fpm"]
+# Step 13: Use JSON CMD syntax to start PHP-FPM and Nginx
+CMD ["sh", "-c", "service nginx start && php-fpm"]
