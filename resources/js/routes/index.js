@@ -2,7 +2,7 @@ import VueRouter from 'vue-router';
 
 import SampleHome from '../views/SampleHome.vue';
 import About from '../views/About.vue';
-import Contact from '../views/Contact.vue';
+import Contact from '../views/contact.vue';
 
 import Home from '../views/Home.vue';
 import Sample_1 from '../views/Sample_1.vue';
