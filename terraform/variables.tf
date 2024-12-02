@@ -4,6 +4,11 @@ variable "ami_id" {
 }
 
 variable "key_name" {
-  description = "Key pair for SSH access to the EC2 instance"
+  description = "The name of the SSH key pair"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "VPC ID for the EC2 instance"
   type        = string
 }
