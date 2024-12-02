@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_security_group" "laravel_sg" {
-  name        = "laravel-vue-sg"
+  name        = "ninh-laravel-vue-sg"
   description = "Security group for the Laravel-Vue application"
   vpc_id      = var.vpc_id
 
@@ -37,7 +37,7 @@ resource "aws_security_group" "laravel_sg" {
 }
 
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role_for_docker"
+  name = "ninh_ec2_role_for_docker"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -55,7 +55,7 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 resource "aws_iam_role_policy" "ec2_role_policy" {
-  name   = "ec2_role_policy"
+  name   = "ninh_ec2_role_policy"
   role   = aws_iam_role.ec2_role.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -80,7 +80,7 @@ resource "aws_iam_role_policy" "ec2_role_policy" {
 }
 
 resource "aws_iam_instance_profile" "ec2_role" {
-  name = "ec2_instance_profile"
+  name = "ninh_ec2_instance_profile"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -104,7 +104,7 @@ resource "aws_instance" "laravel_app" {
               EOF
 
   tags = {
-    Name = "Laravel-Vue-Server"
+    Name = "Ninh-Laravel-Vue-Server"
   }
 
   associate_public_ip_address = true
