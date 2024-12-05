@@ -1,43 +1,43 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "ap-southeast-1"
 }
 
-resource "aws_security_group" "laravel_sg" {
-  name        = "ninh-laravel-vue-sg"
-  description = "Security group for the Laravel-Vue application"
+# Security Group
+resource "aws_security_group" "ninh_laravel_sg" {
+  name        = "ninh_laravel_sg"
+  description = "Security group for Laravel-Vue app"
   vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow SSH access from anywhere
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow HTTP traffic from anywhere
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow HTTPS traffic from anywhere
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow all outbound traffic
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-resource "aws_iam_role" "ec2_role" {
-  name = "ninh_ec2_role_for_docker"
+# ECR Repository
+resource "aws_ecr_repository" "ninh_laravel_vue_repo" {
+  name = "ninh_laravel_vue_app"
+}
+
+# IAM Role and Profile for EC2
+resource "aws_iam_role" "ninh_ec2_role" {
+  name = "ninh_ec2_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -48,65 +48,52 @@ resource "aws_iam_role" "ec2_role" {
           Service = "ec2.amazonaws.com"
         }
         Effect    = "Allow"
-        Sid       = ""
-      },
+      }
     ]
   })
 }
 
-resource "aws_iam_role_policy" "ec2_role_policy" {
-  name   = "ninh_ec2_role_policy"
-  role   = aws_iam_role.ec2_role.id
+resource "aws_iam_role_policy" "ninh_ec2_policy" {
+  name = "ninh_ec2_policy"
+  role = aws_iam_role.ninh_ec2_role.id
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = "ecr:GetAuthorizationToken"
+        Action   = ["ecr:GetAuthorizationToken", "ecr:BatchGetImage", "ecr:BatchCheckLayerAvailability", "ecr:PutImage", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload"]
         Effect   = "Allow"
         Resource = "*"
-      },
-      {
-        Action   = "ecr:BatchGetImage"
-        Effect   = "Allow"
-        Resource = "*"
-      },
-      {
-        Action   = "ecr:BatchGetManifest"
-        Effect   = "Allow"
-        Resource = "*"
-      },
+      }
     ]
   })
 }
 
-resource "aws_iam_instance_profile" "ec2_role" {
+resource "aws_iam_instance_profile" "ninh_ec2_instance_profile" {
   name = "ninh_ec2_instance_profile"
-  role = aws_iam_role.ec2_role.name
+  role = aws_iam_role.ninh_ec2_role.name
 }
 
-resource "aws_instance" "laravel_app" {
-  ami           = var.ami_id
-  instance_type = "t4g.nano"  # Cheapest instance
-  key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.laravel_sg.id]
+# EC2 Instance
+resource "aws_instance" "ninh_laravel_app" {
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.ninh_laravel_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ninh_ec2_instance_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
-              # Install Docker and start the service
               yum update -y
               yum install -y docker
               service docker start
               usermod -a -G docker ec2-user
-              # Pull and run the Docker container from ECR
-              aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com
-              docker pull <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/laravel-vue-app:latest
-              docker run -d -p 80:80 -p 9000:9000 <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/laravel-vue-app:latest
+              $(aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.ninh_laravel_vue_repo.repository_url})
+              docker pull ${aws_ecr_repository.ninh_laravel_vue_repo.repository_url}:latest
+              docker run -d -p 80:80 ${aws_ecr_repository.ninh_laravel_vue_repo.repository_url}:latest
               EOF
 
   tags = {
-    Name = "Ninh-Laravel-Vue-Server"
+    Name = "ninh_laravel_app"
   }
-
-  associate_public_ip_address = true
-  iam_instance_profile = aws_iam_instance_profile.ec2_role.name
 }

@@ -1,14 +1,14 @@
+variable "vpc_id" {
+  description = "The ID of the VPC"
+  type        = string
+}
+
 variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
+  description = "AMI ID for EC2 instances"
   type        = string
 }
 
 variable "key_name" {
-  description = "The name of the SSH key pair"
-  type        = string
-}
-
-variable "vpc_id" {
-  description = "VPC ID for the EC2 instance"
+  description = "SSH Key Pair Name"
   type        = string
 }
