@@ -2,11 +2,39 @@ provider "aws" {
   region = "ap-southeast-1"
 }
 
+# Get default VPC
+data "aws_vpc" "default" {
+  default = true
+}
+
+# Get default Subnets in the default VPC
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+# Get the latest Amazon Linux 2 AMI
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "owner-id"
+    values = ["137112412989"] # Amazon AMI Owner ID
+  }
+}
+
 # Security Group
 resource "aws_security_group" "ninh_laravel_sg" {
   name        = "ninh_laravel_sg"
   description = "Security group for Laravel-Vue app"
-  vpc_id      = var.vpc_id
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     from_port   = 22
@@ -76,11 +104,13 @@ resource "aws_iam_instance_profile" "ninh_ec2_instance_profile" {
 
 # EC2 Instance
 resource "aws_instance" "ninh_laravel_app" {
-  ami                    = var.ami_id
+  ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t2.micro"
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.ninh_laravel_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ninh_ec2_instance_profile.name
+
+  subnet_id = data.aws_subnets.default.ids[0]
 
   user_data = <<-EOF
               #!/bin/bash
