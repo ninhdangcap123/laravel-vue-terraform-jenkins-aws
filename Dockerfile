@@ -48,5 +48,5 @@ COPY ./deploy/nginx/default.conf /etc/nginx/sites-available/default
 EXPOSE 8080
 EXPOSE 9000
 
-# Step 13: Use JSON CMD syntax to start PHP-FPM and Nginx
-CMD ["sh", "-c", "service nginx start && php-fpm"]
+# Step 13: Start PHP-FPM and Nginx directly without using the 'service' command
+CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
