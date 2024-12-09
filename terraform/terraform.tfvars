@@ -1,3 +1,1 @@
-vpc_id   = "your-vpc-id"
-ami_id   = "your-ami-id"
-key_name = "your-key-name"
+key_name = "ninh_ssh_key"
