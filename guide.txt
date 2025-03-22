@@ -1,0 +1,235 @@
+First Build the Dockerfile on local to test before pushing on to AWS
+
+Next, setup the infrastructure
+
+Here's an expanded and more detailed guide incorporating all services with a focus on step-by-step instructions and detailed explanations:
+
+1. VPC Setup (Virtual Private Cloud)
+Steps to create VPC:
+
+Create VPC
+Navigate to VPC in AWS Management Console.
+
+Click on Create VPC.
+  Name: ninhnh-vti-vpc.
+  CIDR Block: 10.0.0.0/16 (Provides up to 65,536 IP addresses).
+  Enable DNS hostnames and DNS resolution for name resolution.
+Create Subnets
+
+Go to Subnets and click Create subnet.
+  Public Subnet:
+    Name: ninhnh-vti-public-subnet.
+    VPC: ninhnh-vti-vpc.
+    CIDR: 10.0.1.0/24 (256 IPs for public-facing resources).
+    Availability Zone: Choose one for high availability.
+  Private Subnet:
+    Name: ninhnh-vti-private-subnet.
+    VPC: ninhnh-vti-vpc.
+    CIDR: 10.0.2.0/24.
+    Availability Zone: Different from public for redundancy.
+
+Create Route Tables
+
+  Public Route Table:
+    Name: ninhnh-vti-public-rt.
+    Associate with ninhnh-vti-public-subnet.
+    Add a route for 0.0.0.0/0 pointing to Internet Gateway.
+  Private Route Table:
+    Name: ninhnh-vti-private-rt.
+    Associate with ninhnh-vti-private-subnet.
+    Add a route for 0.0.0.0/0 pointing to NAT Gateway.
+
+Create Internet Gateway
+
+  Name: ninhnh-vti-igw.
+  Attach to ninhnh-vti-vpc.
+  Create NAT Gateway
+
+  Name: ninhnh-vti-nat-gw.
+  Subnet: ninhnh-vti-public-subnet.
+  Elastic IP: Allocate a new Elastic IP.
+
+2. IAM Setup (Identity and Access Management)
+Steps to create IAM roles and policies:
+Create IAM Roles
+
+  EC2 Role:
+    Name: ninhnh-vti-ec2-role.
+    Attach AmazonEC2FullAccess policy.
+  EKS Role:
+    Name: ninhnh-vti-eks-role.
+    Attach AmazonEKSClusterPolicy and AmazonEKSVPCResourceController policies.
+
+Create Policies
+
+  S3 Access Policy:
+    Name: ninhnh-vti-s3-policy.
+    JSON Policy:
+    
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:ListBucket"
+          ],
+          "Resource": [
+            "arn:aws:s3:::ninhnh-vti-s3-bucket/*",
+            "arn:aws:s3:::ninhnh-vti-s3-bucket"
+          ]
+        }
+      ]
+    }
+3. AMI and Launch Templates
+Steps to create AMI and Launch Template:
+Create AMI
+
+Launch an EC2 instance.
+Install necessary software (Laravel, Docker).
+
+  Create AMI:
+    Name: ninhnh-vti-laravel-ami.
+    Actions > Create Image.
+  Create Launch Template
+
+  Go to Launch Templates.
+  Click Create Launch Template.
+    Name: ninhnh-vti-launch-template.
+    Use ninhnh-vti-laravel-ami as the AMI.
+    Define instance type, key pairs, security groups.
+
+4. EC2 (Elastic Compute Cloud)
+  Steps to launch EC2 instances:
+  Launch EC2 Instance Using Launch Template
+
+  Use ninhnh-vti-launch-template.
+  Choose ninhnh-vti-public-subnet for public-facing applications.
+  Assign ninhnh-vti-ec2-role.
+  Attach EBS Volume
+
+  Attach ninhnh-vti-ebs-volume to the instance for persistent storage.
+
+5. EBS (Elastic Block Store)
+  Steps to set up EBS:
+  Create EBS Volume
+
+  Name: ninhnh-vti-ebs-volume.
+  Type: gp2.
+  Size: 20 GB.
+  Availability Zone: Match with EC2 instance.
+  Create EBS Snapshot
+
+  Snapshot Name: ninhnh-vti-ebs-snapshot.
+  Regular snapshots for backups.
+6. ECR (Elastic Container Registry)
+Steps to create and use ECR:
+Create ECR Repository
+
+  Name: ninhnh-vti-ecr-repo.
+  Push Docker Image to ECR
+
+  Authenticate with ECR.
+  Tag and push your Laravel app Docker image.
+7. EKS (Elastic Kubernetes Service)
+  Steps to set up EKS:
+  Create EKS Cluster
+
+  Name: ninhnh-vti-eks-cluster.
+  Use ninhnh-vti-vpc.
+  Deploy Application to EKS
+
+  Create deployment YAML files for Laravel and Vue.js.
+  Apply using kubectl.
+  
+Set Up ALB
+
+Name: ninhnh-vti-alb.
+Use AWS Load Balancer Controller.
+8. RDS (Relational Database Service)
+Steps to set up RDS:
+Create RDS Instance
+
+Name: ninhnh-vti-rds-instance.
+Engine: MySQL.
+Multi-AZ Deployment: Enabled for high availability.
+Public Access: Disabled (access through EC2/EKS).
+Migrate Database Data
+
+Use AWS DMS or manual data dump.
+9. EFS (Elastic File System)
+Steps to set up EFS:
+Create EFS File System
+
+Name: ninhnh-vti-efs.
+VPC: ninhnh-vti-vpc.
+Mount EFS
+
+Mount EFS on EC2 or within EKS pods.
+10. S3 (Simple Storage Service)
+Steps to set up S3:
+Create S3 Bucket
+
+Name: ninhnh-vti-s3-bucket.
+Enable Static Web Hosting
+
+Host static assets (e.g., Vue.js frontend).
+Permissions: Bucket policy to allow public access (if required).
+11. Secrets Manager & KMS (Key Management Service)
+Steps to set up Secrets Manager and KMS:
+Store Secrets
+
+Name: ninhnh-vti-secrets.
+Store RDS credentials.
+Encrypt Data Using KMS
+
+Key Name: ninhnh-vti-kms-key.
+Use KMS for encrypting sensitive data (e.g., EBS volumes, S3 objects).
+12. CloudWatch & CloudTrail
+Steps to set up CloudWatch and CloudTrail:
+Set up CloudWatch Alarms
+
+Logs: ninhnh-vti-cloudwatch-logs.
+Alarms: Set thresholds for CPU, memory, and network usage.
+Enable CloudTrail
+
+Trail Name: ninhnh-vti-cloudtrail.
+Track all API activity.
+13. CloudFront (Content Delivery Network)
+Steps to set up CloudFront:
+Create CloudFront Distribution
+
+Name: ninhnh-vti-cloudfront.
+Origin: ninhnh-vti-s3-bucket or ALB.
+SSL/TLS Configuration
+
+Use ACM for SSL certificates.
+14. WAF (Web Application Firewall)
+Steps to set up WAF:
+Create WAF Web ACL
+
+Name: ninhnh-vti-waf-acl.
+Add managed rules like AWSManagedRulesCommonRuleSet.
+Block common threats (SQL injection, XSS).
+Associate WAF with CloudFront
+
+Apply WAF to protect web applications.
+15. SNS & SQS (Messaging)
+Steps to set up SNS and SQS:
+Create SNS Topic
+
+Name: ninhnh-vti-sns-topic.
+For notifications (e.g., alarms).
+Create SQS Queue
+
+Name: ninhnh-vti-sqs-queue.
+For decoupling microservices.
+16. CI/CD Pipeline with CodePipeline
+Steps to set up CI/CD with CodePipeline:
+Create CodePipeline
+Name: ninhnh-vti-codepipeline.
+Source: Connect to CodeCommit repository.
+Build: Use CodeBuild for Docker image.
+Deploy: Deploy to EKS or EC2.
